@@ -103,6 +103,7 @@ d3.json("data/revenues.json").then((data) => {
 
     // ------ UPDATE INTERVAL
     d3.interval(() => {
+        update(data);
         var newData = flag ? data : data.slice(1);
         update(newData);
         flag = !flag;
@@ -113,63 +114,47 @@ d3.json("data/revenues.json").then((data) => {
 });
 
 
+//-----------------------------------------UPDATE
 function update(data) {
-    flag = !flag; // Toggle flag
-    var value = flag ? "revenue" : "profit";
-    var label = flag ? "Revenue (dlls.)" : "Profit (dlls.)";
-    yLabel.text(label);
+  flag = !flag; // Toggle flag
+  var value = flag ? "revenue" : "profit";
+  var label = flag ? "Revenue (dlls.)" : "Profit (dlls.)";
+  yLabel.text(label);
 
-    // Update scales
-    y.domain([d3.max(data, (d) => d[value]) + 10000, 0]);
+  // Update scales
+  y.domain([d3.max(data, (d) => d[value]) + 10000, 0]);
 
-    var bottomAxis = d3.axisBottom(x);
-    var leftAxis = d3.axisLeft(y).ticks(11).tickFormat((d) => (60000 - d) / 1000 + "K");
+  var bottomAxis = d3.axisBottom(x);
+  var leftAxis = d3.axisLeft(y).ticks(11).tickFormat((d) => (60000 - d) / 1000 + "K");
 
-    // Update x-axis and y-axis
-    xAxisGroup.call(bottomAxis);
-    yAxisGroup.call(leftAxis);
+  // Update x-axis and y-axis
+  xAxisGroup.call(bottomAxis);
+  yAxisGroup.call(leftAxis);
 
-    // Remove existing x-axis tick labels
-    xAxisGroup.selectAll("text").remove();
+  // Remove existing x-axis tick labels
+  xAxisGroup.selectAll("text").remove();
 
-    // Add new x-axis tick labels
-    xAxisGroup
-        .call(bottomAxis)
-        .selectAll("text")
-        .attr("class", "x axis-label")
-        .attr("x", width / 2)
-        .attr("y", height + 140)
-        .attr("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .style("fill", "black")
-        .attr("transform", "translate(0, -50)")
-        .text((d) => d.month);
+  // Add new x-axis tick labels
+  xAxisGroup
+    .call(bottomAxis)
+    .selectAll("text")
+    .attr("class", "x axis-label")
+    .attr("x", width / 2)
+    .attr("y", height + 140)
+    .attr("font-size", "20px")
+    .attr("text-anchor", "middle")
+    .style("fill", "black")
+    .attr("transform", "translate(0, -50)")
+    .text((d, i) => (flag || i > 0) ? d : ""); // Hide January tick when flag is true and show it otherwise
 
-    //--------- UPDATE RECTANGLES
-    rects = g.selectAll("rect").data(data, (d) => d.month);
-
-    rects.exit().remove(); // Remove any existing bars not present in the new data
-
-    rects
-        .enter()
-        .append("rect")
-        .attr("x", (d) => x(d.month))
-        .attr("y", height)
-        .attr("width", x.bandwidth())
-        .attr("height", 0)
-        .merge(rects)
-        .transition()
-        .duration(500)
-        .attr("x", (d) => x(d.month))
-        .attr("y", (d) => height - y(d[value]))
-        .attr("width", x.bandwidth())
-        .attr("height", (d) => y(d[value]))
-        .attr("fill", "indianred");
-
-    // Remove January bar specifically for profit graph
-    if (!flag) {
-        g.selectAll("rect")
-            .filter((d) => d.month === "January")
-            .remove();
-    }
+  //--------- UPDATE RECTANGLES
+  rects
+    .data(data)
+    .transition()
+    .duration(500)
+    .attr("x", (d) => x(d.month))
+    .attr("y", (d) => height - y(d[value]))
+    .attr("width", x.bandwidth())
+    .attr("height", (d) => y(d[value]))
+    .attr("fill", "indianred");
 }
